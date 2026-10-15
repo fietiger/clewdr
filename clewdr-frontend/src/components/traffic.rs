@@ -56,12 +56,21 @@ pub fn TrafficPage() -> impl IntoView {
         fetch();
     });
 
-    // The interval is owned by this component, so switching tabs drops it
-    // rather than leaving a timer running against an unmounted view.
-    let interval = gloo_timers::callback::Interval::new(REFRESH_MS, move || {
-        refresh_trigger.update(|v| *v += 1);
+    // A self-refreshing loop rather than a `gloo_timers` Interval: the
+    // interval handle is not `Send`, and `on_cleanup` requires a `Send + Sync`
+    // closure in Leptos 0.8. The flag stops the loop when the tab switches
+    // away, so it does not keep poking a disposed signal.
+    let alive = RwSignal::new(true);
+    on_cleanup(move || alive.set(false));
+    spawn_local(async move {
+        loop {
+            gloo_timers::future::TimeoutFuture::new(REFRESH_MS).await;
+            if !alive.get_untracked() {
+                break;
+            }
+            refresh_trigger.update(|v| *v += 1);
+        }
     });
-    on_cleanup(move || drop(interval));
 
     view! {
         <div class="stack">
