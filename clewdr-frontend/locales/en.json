@@ -24,11 +24,13 @@
   },
   "tabs": {
     "claude": "Claude",
+    "traffic": "Traffic",
     "config": "Config",
     "auth": "Auth"
   },
   "page": {
     "claudeSubtitle": "Submit cookies and watch the pool's health.",
+    "trafficSubtitle": "Recent request activity and the rolling call log.",
     "configSubtitle": "Runtime settings for the proxy.",
     "authSubtitle": "Your session and credentials."
   },
@@ -118,6 +120,20 @@
     "noCookies": "No cookies",
     "deleteConfirm": "Are you sure you want to delete this cookie?",
     "copy": "Copy to clipboard"
+  },
+  "traffic": {
+    "chartTitle": "Request activity",
+    "recentTitle": "Recent requests",
+    "noRequests": "No requests recorded yet",
+    "bucketNote": "Each bar is {{seconds}} seconds of proxied traffic.",
+    "window1h": "1h",
+    "window24h": "24h",
+    "window7d": "7d",
+    "tiles": {
+      "total": "Requests",
+      "ok": "Succeeded",
+      "error": "Failed"
+    }
   },
   "config": {
     "title": "Configuration",

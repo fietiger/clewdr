@@ -11,8 +11,8 @@ use tower_http::{compression::CompressionLayer, cors::CorsLayer};
 use crate::{
     api::{
         api_auth, api_claude_code, api_claude_code_count_tokens, api_claude_web, api_delete_cookie,
-        api_get_config, api_get_cookies, api_get_models, api_post_config, api_post_cookie,
-        api_version,
+        api_get_config, api_get_cookies, api_get_models, api_get_requests, api_get_stats,
+        api_post_config, api_post_cookie, api_version, record_traffic,
     },
     middleware::{
         RequireAdminAuth, RequireBearerAuth, RequireFlexibleAuth,
@@ -70,6 +70,7 @@ impl RouterBuilder {
             .route("/v1/messages", post(api_claude_web))
             .layer(
                 ServiceBuilder::new()
+                    .layer(axum::middleware::from_fn(record_traffic))
                     .layer(from_extractor::<RequireFlexibleAuth>())
                     .layer(CompressionLayer::new())
                     .layer(map_response(add_usage_info))
@@ -91,6 +92,7 @@ impl RouterBuilder {
             )
             .layer(
                 ServiceBuilder::new()
+                    .layer(axum::middleware::from_fn(record_traffic))
                     .layer(from_extractor::<RequireFlexibleAuth>())
                     .layer(CompressionLayer::new()),
             )
@@ -108,6 +110,8 @@ impl RouterBuilder {
         let admin_router = Router::new()
             .route("/auth", get(api_auth))
             .route("/config", get(api_get_config).post(api_post_config))
+            .route("/stats", get(api_get_stats))
+            .route("/requests", get(api_get_requests))
             .with_state(self.cookie_pool.clone());
         let router = Router::new()
             .nest(
@@ -128,6 +132,7 @@ impl RouterBuilder {
             .route("/v1/models", get(api_get_models))
             .layer(
                 ServiceBuilder::new()
+                    .layer(axum::middleware::from_fn(record_traffic))
                     .layer(from_extractor::<RequireBearerAuth>())
                     .layer(CompressionLayer::new())
                     .layer(map_response(to_oai))
@@ -146,6 +151,7 @@ impl RouterBuilder {
             .route("/code/v1/models", get(api_get_models))
             .layer(
                 ServiceBuilder::new()
+                    .layer(axum::middleware::from_fn(record_traffic))
                     .layer(from_extractor::<RequireBearerAuth>())
                     .layer(CompressionLayer::new())
                     .layer(map_response(to_oai)),

@@ -4,7 +4,7 @@ use wasm_bindgen_futures::spawn_local;
 
 use super::{
     auth::AuthGatekeeper, config_tab::ConfigTab, cookie::CookieVisualization,
-    cookie_submit::CookieSubmitForm,
+    cookie_submit::CookieSubmitForm, traffic::TrafficPage,
 };
 use crate::{
     api,
@@ -15,8 +15,8 @@ use crate::{
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Tab {
     Claude,
+    Traffic,
     Config,
-    Auth,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -123,6 +123,15 @@ pub fn App() -> impl IntoView {
                             }}
                         </section>
                     }.into_any(),
+                    Tab::Traffic => view! {
+                        <section class="page page-active" role="tabpanel">
+                            <header class="page-title">
+                                <h1>"📈 " {move || i18n.t("tabs.traffic")}</h1>
+                                <p class="subtitle">{move || i18n.t("page.trafficSubtitle")}</p>
+                            </header>
+                            <TrafficPage />
+                        </section>
+                    }.into_any(),
                     Tab::Config => view! {
                         <section class="page page-active" role="tabpanel">
                             <header class="page-title">
@@ -130,15 +139,7 @@ pub fn App() -> impl IntoView {
                                 <p class="subtitle">{move || i18n.t("page.configSubtitle")}</p>
                             </header>
                             <ConfigTab />
-                        </section>
-                    }.into_any(),
-                    Tab::Auth => view! {
-                        <section class="page page-active" role="tabpanel">
-                            <header class="page-title">
-                                <h1>"👤 " {move || i18n.t("tabs.auth")}</h1>
-                                <p class="subtitle">{move || i18n.t("page.authSubtitle")}</p>
-                            </header>
-                            <LogoutPanel is_authenticated />
+                            <SessionPanel is_authenticated />
                         </section>
                     }.into_any(),
                 }}
@@ -200,15 +201,13 @@ fn LoginPage(password_changed: bool, is_authenticated: RwSignal<bool>) -> impl I
 }
 
 #[component]
-fn LogoutPanel(is_authenticated: RwSignal<bool>) -> impl IntoView {
+fn SessionPanel(is_authenticated: RwSignal<bool>) -> impl IntoView {
     let i18n = use_i18n();
     view! {
+        <h2 class="section-title">{move || i18n.t("auth.authTitle")}</h2>
         <div class="group">
             <div class="row row-stack">
-                <div class="row-label">{move || i18n.t("auth.authTitle")}</div>
-                <div class="row-body">
-                    <span class="cell-text">{move || i18n.t("auth.loggedInMessage")}</span>
-                </div>
+                <div class="row-label">{move || i18n.t("auth.loggedInMessage")}</div>
             </div>
         </div>
         <div class="actions page-actions">
@@ -275,8 +274,8 @@ fn TabBar(active_tab: RwSignal<Tab>) -> impl IntoView {
     let i18n = use_i18n();
     let tabs = [
         (Tab::Claude, "🔑", "tabs.claude"),
+        (Tab::Traffic, "📈", "tabs.traffic"),
         (Tab::Config, "⚙️", "tabs.config"),
-        (Tab::Auth, "👤", "tabs.auth"),
     ];
     view! {
         <nav class="tab-bar" role="tablist">

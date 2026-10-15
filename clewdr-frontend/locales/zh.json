@@ -24,11 +24,13 @@
   },
   "tabs": {
     "claude": "Claude",
+    "traffic": "请求动态",
     "config": "配置",
     "auth": "认证"
   },
   "page": {
     "claudeSubtitle": "提交 Cookie，查看账号池健康状况。",
+    "trafficSubtitle": "最近的请求动态与调用日志。",
     "configSubtitle": "代理的运行参数设置。",
     "authSubtitle": "当前会话与凭据。"
   },
@@ -118,6 +120,20 @@
     "noCookies": "没有cookie",
     "deleteConfirm": "您确定要删除此cookie吗？",
     "copy": "复制到剪贴板"
+  },
+  "traffic": {
+    "chartTitle": "请求动态",
+    "recentTitle": "最近请求",
+    "noRequests": "暂无请求记录",
+    "bucketNote": "每根柱子代表 {{seconds}} 秒的代理流量。",
+    "window1h": "1 小时",
+    "window24h": "24 小时",
+    "window7d": "7 天",
+    "tiles": {
+      "total": "请求数",
+      "ok": "成功",
+      "error": "失败"
+    }
   },
   "config": {
     "title": "配置",

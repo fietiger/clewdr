@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 
 use crate::{
     storage,
-    types::{ConfigData, CookieStatusInfo},
+    types::{ConfigData, CookieStatusInfo, RequestLog, TrafficStats},
 };
 
 fn auth_header() -> String {
@@ -108,4 +108,12 @@ pub async fn get_config() -> Result<ConfigData, String> {
 
 pub async fn save_config(config: &ConfigData) -> Result<(), String> {
     authed_post("/api/config", config).await
+}
+
+pub async fn get_stats(window: &str) -> Result<TrafficStats, String> {
+    authed_get(&format!("/api/stats?window={window}")).await
+}
+
+pub async fn get_requests(limit: usize) -> Result<RequestLog, String> {
+    authed_get(&format!("/api/requests?limit={limit}")).await
 }
