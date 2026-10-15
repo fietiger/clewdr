@@ -27,6 +27,11 @@
     "config": "配置",
     "auth": "认证"
   },
+  "page": {
+    "claudeSubtitle": "提交 Cookie，查看账号池健康状况。",
+    "configSubtitle": "代理的运行参数设置。",
+    "authSubtitle": "当前会话与凭据。"
+  },
   "claudeTab": {
     "submit": "提交Cookie",
     "status": "Cookie状态"
@@ -53,6 +58,13 @@
   },
   "cookieStatus": {
     "title": "Cookie状态",
+    "pool": "账号池",
+    "tiles": {
+      "total": "总数",
+      "valid": "可用",
+      "exhausted": "耗尽",
+      "invalid": "失效"
+    },
     "total": "总计：",
     "refresh": "刷新",
     "refreshing": "刷新中...",

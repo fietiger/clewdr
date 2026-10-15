@@ -49,19 +49,43 @@ pub fn CookieVisualization() -> impl IntoView {
 
     view! {
         <div class="stack">
-            <div class="row-btw">
-                <div>
-                    <h3>{move || i18n.t("cookieStatus.title")}</h3>
-                    <p class="text-xs text-mute">
-                        {move || {
-                            let d = data.get();
-                            let total = d.valid.len() + d.exhausted.len() + d.invalid.len();
-                            format!("{} {total}", i18n.t("cookieStatus.total"))
-                        }}
-                    </p>
+            <div class="overview">
+                {move || {
+                    let d = data.get();
+                    let i = use_i18n();
+                    let total = d.valid.len() + d.exhausted.len() + d.invalid.len();
+                    view! {
+                        <div class="tile">
+                            <div class="tile-value">{total.to_string()}</div>
+                            <div class="tile-label">{i.t("cookieStatus.tiles.total")}</div>
+                        </div>
+                        <div class="tile">
+                            <div class="tile-value tone-success">{d.valid.len().to_string()}</div>
+                            <div class="tile-label">{i.t("cookieStatus.tiles.valid")}</div>
+                        </div>
+                        <div class="tile">
+                            <div class="tile-value tone-warn">{d.exhausted.len().to_string()}</div>
+                            <div class="tile-label">{i.t("cookieStatus.tiles.exhausted")}</div>
+                        </div>
+                        <div class="tile">
+                            <div class="tile-value tone-danger">{d.invalid.len().to_string()}</div>
+                            <div class="tile-label">{i.t("cookieStatus.tiles.invalid")}</div>
+                        </div>
+                    }
+                }}
+            </div>
+
+            <Show when=move || error.get().is_some()>
+                <div class="alert alert-error">
+                    {move || error.get().unwrap_or_default()}
                 </div>
+            </Show>
+
+            <div class="section-title-row">
+                <h2 class="section-title">{move || i18n.t("cookieStatus.pool")}</h2>
                 <button
                     class="btn btn-ghost btn-sm"
+                    title=move || i18n.t("cookieStatus.refreshTooltip")
                     disabled=move || loading.get()
                     on:click=on_refresh
                 >
@@ -72,12 +96,6 @@ pub fn CookieVisualization() -> impl IntoView {
                     }}
                 </button>
             </div>
-
-            <Show when=move || error.get().is_some()>
-                <div class="alert alert-error">
-                    {move || error.get().unwrap_or_default()}
-                </div>
-            </Show>
 
             {move || {
                 let d = data.get();

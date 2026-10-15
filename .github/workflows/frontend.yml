@@ -1,0 +1,54 @@
+name: frontend
+
+# Fork-local workflow. Upstream builds through nix on master/tags only; this
+# one exists so a frontend change on any branch gets compiled and produces a
+# downloadable static bundle without a local Rust toolchain.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build frontend (wasm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: clewdr-frontend
+
+      - name: Install trunk
+        uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+
+      - name: Type-check frontend
+        working-directory: clewdr-frontend
+        run: cargo check --target wasm32-unknown-unknown
+
+      - name: Build frontend
+        working-directory: clewdr-frontend
+        run: trunk build --release
+
+      - name: Upload static bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-files
+          path: static/
+          retention-days: 7

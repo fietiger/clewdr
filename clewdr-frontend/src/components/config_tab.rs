@@ -157,23 +157,6 @@ pub fn ConfigTab() -> impl IntoView {
                     let cfg = config.get().unwrap();
                     view! {
                         <div class="stack-lg">
-                            <div class="row-btw">
-                                <h3>{i18n.t("config.title")}</h3>
-                                <button
-                                    class="btn btn-primary btn-sm"
-                                    disabled=move || saving.get()
-                                    on:click=on_save
-                                >
-                                    {move || {
-                                        if saving.get() {
-                                            i18n.t("config.saving")
-                                        } else {
-                                            i18n.t("config.saveButton")
-                                        }
-                                    }}
-                                </button>
-                            </div>
-
                             <div class="stack">
                                 // Server
                                 <ConfigSection
@@ -233,6 +216,22 @@ pub fn ConfigTab() -> impl IntoView {
                                     <TextArea name="custom_prompt" label=i18n.t("config.sections.prompt.customPrompt") value=cfg.custom_prompt.clone() on_input=on_textarea />
                                     <TextArea name="custom_system" label=i18n.t("config.sections.prompt.customSystem") value=cfg.custom_system.clone().unwrap_or_default() on_input=on_textarea />
                                 </ConfigSection>
+                            </div>
+
+                            <div class="actions page-actions">
+                                <button
+                                    class="btn btn-primary"
+                                    disabled=move || saving.get()
+                                    on:click=on_save
+                                >
+                                    {move || {
+                                        if saving.get() {
+                                            i18n.t("config.saving")
+                                        } else {
+                                            i18n.t("config.saveButton")
+                                        }
+                                    }}
+                                </button>
                             </div>
                         </div>
                     }

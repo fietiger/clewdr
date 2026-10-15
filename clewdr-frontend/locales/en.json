@@ -27,6 +27,11 @@
     "config": "Config",
     "auth": "Auth"
   },
+  "page": {
+    "claudeSubtitle": "Submit cookies and watch the pool's health.",
+    "configSubtitle": "Runtime settings for the proxy.",
+    "authSubtitle": "Your session and credentials."
+  },
   "claudeTab": {
     "submit": "Submit Cookie",
     "status": "Cookie Status"
@@ -53,6 +58,13 @@
   },
   "cookieStatus": {
     "title": "Cookie Status",
+    "pool": "In the rotation",
+    "tiles": {
+      "total": "Total",
+      "valid": "Valid",
+      "exhausted": "Exhausted",
+      "invalid": "Invalid"
+    },
     "total": "Total:",
     "refresh": "Refresh",
     "refreshing": "Refreshing...",

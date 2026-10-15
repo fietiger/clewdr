@@ -81,15 +81,20 @@ pub fn App() -> impl IntoView {
         })
         .unwrap_or(false);
 
+    let i18n = use_i18n();
+
     view! {
         <div>
             <Toast toast />
 
-            <header class="header">
-                <div class="container row-btw">
-                    <div class="row">
-                        <h1>"ClewdR"</h1>
-                        <span class="text-xs text-mute" style="white-space:pre-line">{move || version.get()}</span>
+            <header class="topbar">
+                <div class="topbar-inner">
+                    <div class="brand">
+                        <span class="brand-mark">"C"</span>
+                        <span class="brand-name">"ClewdR"</span>
+                        <span class="text-xs text-mute" style="white-space:pre-line">
+                            {move || version.get()}
+                        </span>
                     </div>
                     <div class="row-sm">
                         <ThemeToggle />
@@ -98,38 +103,59 @@ pub fn App() -> impl IntoView {
                 </div>
             </header>
 
-            <main class="container" style="padding-top:2rem; padding-bottom:2rem">
-                <div class="card-wrap">
-                    <div class="card">
-                        <Show
-                            when=move || is_authenticated.get()
-                            fallback=move || {
-                                view! { <LoginPage password_changed is_authenticated /> }
-                            }
-                        >
-                            <TabBar active_tab />
-                            {move || match active_tab.get() {
-                                Tab::Claude => view! {
-                                    <SubTabBar sub_tab=claude_sub />
-                                    {move || match claude_sub.get() {
-                                        ClaudeSubTab::Submit => view! { <CookieSubmitForm /> }.into_any(),
-                                        ClaudeSubTab::Status => view! { <CookieVisualization /> }.into_any(),
-                                    }}
-                                }.into_any(),
-                                Tab::Config => view! { <ConfigTab /> }.into_any(),
-                                Tab::Auth => view! { <LogoutPanel is_authenticated /> }.into_any(),
+            <Show
+                when=move || is_authenticated.get()
+                fallback=move || {
+                    view! { <LoginPage password_changed is_authenticated /> }
+                }
+            >
+                {move || match active_tab.get() {
+                    Tab::Claude => view! {
+                        <section class="page page-active" role="tabpanel">
+                            <header class="page-title">
+                                <h1>"🔑 " {move || i18n.t("tabs.claude")}</h1>
+                                <p class="subtitle">{move || i18n.t("page.claudeSubtitle")}</p>
+                            </header>
+                            <SubTabBar sub_tab=claude_sub />
+                            {move || match claude_sub.get() {
+                                ClaudeSubTab::Submit => view! { <CookieSubmitForm /> }.into_any(),
+                                ClaudeSubTab::Status => view! { <CookieVisualization /> }.into_any(),
                             }}
-                        </Show>
-                    </div>
-                </div>
-            </main>
+                        </section>
+                    }.into_any(),
+                    Tab::Config => view! {
+                        <section class="page page-active" role="tabpanel">
+                            <header class="page-title">
+                                <h1>"⚙️ " {move || i18n.t("tabs.config")}</h1>
+                                <p class="subtitle">{move || i18n.t("page.configSubtitle")}</p>
+                            </header>
+                            <ConfigTab />
+                        </section>
+                    }.into_any(),
+                    Tab::Auth => view! {
+                        <section class="page page-active" role="tabpanel">
+                            <header class="page-title">
+                                <h1>"👤 " {move || i18n.t("tabs.auth")}</h1>
+                                <p class="subtitle">{move || i18n.t("page.authSubtitle")}</p>
+                            </header>
+                            <LogoutPanel is_authenticated />
+                        </section>
+                    }.into_any(),
+                }}
+            </Show>
 
-            <footer class="footer">
+            <footer class=move || {
+                if is_authenticated.get() { "footer footer-raised" } else { "footer" }
+            }>
                 {move || {
                     let year = Date::new_0().get_full_year().to_string();
                     use_i18n().tf("app.footer", &[("year", &year)])
                 }}
             </footer>
+
+            <Show when=move || is_authenticated.get()>
+                <TabBar active_tab />
+            </Show>
         </div>
     }
 }
@@ -156,14 +182,20 @@ fn Toast(toast: RwSignal<Option<(String, bool)>>) -> impl IntoView {
 fn LoginPage(password_changed: bool, is_authenticated: RwSignal<bool>) -> impl IntoView {
     let i18n = use_i18n();
     view! {
-        <h2 style="text-align:center; margin-bottom:1rem">{move || i18n.t("auth.title")}</h2>
-        <Show when=move || password_changed>
-            <div class="alert alert-info" style="margin-bottom:1rem">
-                {move || i18n.t("auth.passwordChanged")}
+        <section class="page page-active">
+            <header class="page-title">
+                <h1>"🔐 " {move || i18n.t("auth.title")}</h1>
+                <p class="subtitle">{move || i18n.t("auth.description")}</p>
+            </header>
+            <div class="card">
+                <Show when=move || password_changed>
+                    <div class="alert alert-info" style="margin-bottom:1rem">
+                        {move || i18n.t("auth.passwordChanged")}
+                    </div>
+                </Show>
+                <AuthGatekeeper is_authenticated />
             </div>
-        </Show>
-        <p class="text-dim text-sm" style="text-align:center; margin-bottom:1.5rem">{move || i18n.t("auth.description")}</p>
-        <AuthGatekeeper is_authenticated />
+        </section>
     }
 }
 
@@ -171,9 +203,15 @@ fn LoginPage(password_changed: bool, is_authenticated: RwSignal<bool>) -> impl I
 fn LogoutPanel(is_authenticated: RwSignal<bool>) -> impl IntoView {
     let i18n = use_i18n();
     view! {
-        <div class="stack">
-            <h3>{move || i18n.t("auth.authTitle")}</h3>
-            <p class="text-dim">{move || i18n.t("auth.loggedInMessage")}</p>
+        <div class="group">
+            <div class="row row-stack">
+                <div class="row-label">{move || i18n.t("auth.authTitle")}</div>
+                <div class="row-body">
+                    <span class="cell-text">{move || i18n.t("auth.loggedInMessage")}</span>
+                </div>
+            </div>
+        </div>
+        <div class="actions page-actions">
             <button
                 class="btn btn-danger"
                 on:click=move |_| {
@@ -236,23 +274,27 @@ fn LanguageSelector() -> impl IntoView {
 fn TabBar(active_tab: RwSignal<Tab>) -> impl IntoView {
     let i18n = use_i18n();
     let tabs = [
-        (Tab::Claude, "tabs.claude"),
-        (Tab::Config, "tabs.config"),
-        (Tab::Auth, "tabs.auth"),
+        (Tab::Claude, "🔑", "tabs.claude"),
+        (Tab::Config, "⚙️", "tabs.config"),
+        (Tab::Auth, "👤", "tabs.auth"),
     ];
     view! {
-        <div class="tabs">
-            {tabs.into_iter().map(|(tab, key)| {
+        <nav class="tab-bar" role="tablist">
+            {tabs.into_iter().map(|(tab, icon, key)| {
                 view! {
                     <button
-                        class=move || if active_tab.get() == tab { "tab active" } else { "tab" }
+                        class=move || {
+                            if active_tab.get() == tab { "tab tab-active" } else { "tab" }
+                        }
+                        role="tab"
                         on:click=move |_| active_tab.set(tab)
                     >
-                        {move || i18n.t(key)}
+                        <span class="tab-icon">{icon}</span>
+                        <span>{move || i18n.t(key)}</span>
                     </button>
                 }
             }).collect::<Vec<_>>()}
-        </div>
+        </nav>
     }
 }
 
