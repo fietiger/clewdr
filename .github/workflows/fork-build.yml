@@ -1,0 +1,153 @@
+name: fork-build
+
+# Fork-local workflow. Upstream builds through nix on master and tags; this one
+# covers what a fork needs without a local Rust toolchain: a downloadable static
+# bundle, a backend type-check, and a self-contained Windows binary that can be
+# run as-is.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  BIN_NAME: clewdr
+  # BoringSSL reaches the build through wreq -> btls-sys and needs a C++
+  # toolchain; bindgen needs libclang. Strawberry Perl and nasm are BoringSSL's
+  # own requirements, not cargo's.
+  CHOCOLATEY_PACKAGES: "cmake strawberryperl llvm nasm"
+
+permissions:
+  contents: write
+
+jobs:
+  frontend:
+    name: Build frontend (wasm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: clewdr-frontend
+
+      - name: Install trunk
+        uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+
+      - name: Type-check frontend
+        working-directory: clewdr-frontend
+        run: cargo check --target wasm32-unknown-unknown
+
+      - name: Build frontend
+        working-directory: clewdr-frontend
+        run: trunk build --release
+
+      - name: Upload static bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-files
+          path: static/
+          retention-days: 7
+
+  backend:
+    name: Check backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake perl nasm clang libclang-dev pkg-config
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .
+
+      - name: Check server
+        run: cargo check -p clewdr --no-default-features --features external-resource,portable
+
+  # One self-contained clewdr.exe. `embed-resource` bakes the wasm bundle into
+  # the binary, so the download is a single file with no static/ directory
+  # beside it, and `+crt-static` removes the MSVC redistributable requirement.
+  windows:
+    name: Build Windows binary
+    needs: frontend
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chocolatey packages
+        run: choco install -y --ignore-unfound ${{ env.CHOCOLATEY_PACKAGES }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: x86_64-pc-windows-msvc
+
+      - name: Download static files
+        uses: actions/download-artifact@v4
+        with:
+          name: static-files
+          path: static
+
+      - name: Build clewdr.exe
+        shell: bash
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+        run: |
+          cargo build --release -p clewdr \
+            --target x86_64-pc-windows-msvc \
+            --no-default-features --features embed-resource,portable
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "target/x86_64-pc-windows-msvc/release/${BIN_NAME}.exe" .
+          powershell -Command "Compress-Archive -Path '${BIN_NAME}.exe' -DestinationPath '${BIN_NAME}-windows-x86_64.zip' -Force"
+          ls -lh "${BIN_NAME}-windows-x86_64.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BIN_NAME }}-windows-x86_64
+          path: ${{ env.BIN_NAME }}-windows-x86_64.zip
+          retention-days: 14
+
+      # A rolling release so the download is a stable URL rather than an
+      # artifact that expires and needs a login. Skipped on pull requests,
+      # where the token is read-only.
+      - name: Publish rolling release
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release view fork-build >/dev/null 2>&1 \
+            || gh release create fork-build \
+                 --title "Fork build (rolling)" \
+                 --notes "Rolling Windows build of ${{ github.ref_name }} at ${{ github.sha }}."
+          gh release upload fork-build "${BIN_NAME}-windows-x86_64.zip" --clobber
